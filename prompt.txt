@@ -1,0 +1,258 @@
+🔷 PROMPT START
+
+You are building a new AI-enabled feature inside an existing Flask project called CivicBio, a biomedical waste management system.
+
+Tech stack:
+
+Backend: Python + Flask
+
+Database: MongoDB (MongoEngine)
+
+Role-based system (Facility, Collector, Disposal, Civic)
+
+Timezone: Asia/Kolkata (IST)
+
+Cloud: AWS
+
+We need to integrate Anomaly Detection using AWS services.
+
+The system must:
+
+Be lightweight
+
+Be hackathon-ready
+
+Use AWS Lambda
+
+Store logs in CloudWatch
+
+Optionally use S3 if needed
+
+Avoid heavy ML frameworks
+
+🎯 OBJECTIVE
+
+Detect unusual biomedical waste generation patterns when a facility generates a new waste entry.
+
+Instead of running anomaly detection inside Flask, we will:
+
+Send waste data to AWS Lambda
+
+Lambda calculates anomaly using statistical Z-score
+
+Lambda returns:
+
+is_anomaly (true/false)
+
+z_score
+
+mean
+
+std_dev
+
+Flask stores result in MongoDB
+
+🧱 EXISTING DATA MODEL CONTEXT
+
+Waste model fields:
+
+category (string)
+
+quantity (float)
+
+facility_id (ReferenceField to User)
+
+status
+
+created_at (IST)
+
+User model:
+
+role
+
+details
+
+Facilities have role = "facility"
+
+🧠 AWS ARCHITECTURE REQUIREMENTS
+1️⃣ AWS Lambda (Core AI Logic)
+
+Lambda function should:
+
+Input:
+
+{
+  "facility_id": "string",
+  "current_quantity": float,
+  "historical_quantities": [float]
+}
+
+
+Logic:
+
+Calculate mean
+
+Calculate standard deviation
+
+Compute Z-score:
+
+z = (current - mean) / std
+
+If |z| >= 2.5 → anomaly = true
+
+Edge cases:
+
+If std = 0 → anomaly = false
+
+If historical data < 5 entries → anomaly = false
+
+Return:
+
+{
+  "is_anomaly": true/false,
+  "z_score": float,
+  "mean": float,
+  "std_dev": float
+}
+
+
+Use pure Python (statistics module).
+No heavy ML libraries.
+
+2️⃣ CloudWatch Logging
+
+Lambda must log:
+
+Facility ID
+
+Current quantity
+
+Z-score
+
+Whether anomaly detected
+
+This ensures auditability.
+
+3️⃣ Flask Integration
+
+When facility generates waste:
+
+Step 1:
+
+Save Waste object
+
+Step 2:
+
+Fetch last 30 days waste quantities for that facility
+
+Step 3:
+
+Call AWS Lambda using boto3
+
+Step 4:
+
+Parse Lambda response
+
+Step 5:
+
+If anomaly:
+
+Save WasteAnomaly document
+
+Show warning alert on facility dashboard
+
+4️⃣ WasteAnomaly Model (MongoDB)
+
+Fields:
+
+facility_id
+
+waste_id
+
+actual_quantity
+
+mean
+
+std_dev
+
+z_score
+
+flagged (boolean)
+
+created_at (IST)
+
+5️⃣ Civic Dashboard Integration
+
+Add:
+
+KPI: “Anomalies Detected Today”
+
+List of recent anomalies
+
+Highlight high-risk facilities
+
+6️⃣ Optional: S3 Usage
+
+If waste reports or anomaly reports are exported:
+
+Store generated reports in S3 bucket
+
+Return S3 URL to civic dashboard
+
+🛡️ CONSTRAINTS
+
+Must be modular
+
+Must not break existing role-based flow
+
+Must use boto3 for Lambda invocation
+
+Must handle Lambda failure gracefully
+
+Must not block waste creation if Lambda fails
+
+Must follow IST timezone
+
+📦 OUTPUT EXPECTED
+
+Generate:
+
+AWS Lambda function code
+
+Deployment-ready Lambda structure
+
+Flask boto3 integration snippet
+
+WasteAnomaly model
+
+Civic dashboard query example
+
+Error handling logic
+
+Clear modular file structure
+
+🎯 IMPORTANT
+
+This is a civic governance system.
+
+Focus on:
+
+Explainability
+
+Simplicity
+
+Scalability
+
+Clean integration
+
+Avoid:
+
+Deep learning
+
+Overengineering
+
+Large ML pipelines
+
+This is statistical anomaly detection using AWS serverless.
+
+🔷 PROMPT END
